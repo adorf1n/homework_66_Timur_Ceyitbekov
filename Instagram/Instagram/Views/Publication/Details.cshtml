@@ -27,7 +27,8 @@
             @if(Model.UserId == ViewBag.CurrentUserId)
             {
                 <a asp-action="EditPost" asp-controller="Publication" asp-route-publicationId="@Model.Id" class="btn btn-secondary ml-1">Edit</a>
-                <a asp-action="DeletePost" asp-controller="Publication" asp-route-publicationId="@Model.Id" class="btn btn-danger ml-1">Delete</a>
+                <button class="btn-delete" data-publication-id="@Model.Id">Delete</button>
+
             }
         </div>
         <p class="card-text post-description-text">@Model.Description</p>
@@ -100,3 +101,31 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(document).on('click', '.btn-delete', function () {
+        if (!confirm("Are you sure you want to delete this post?")) {
+            return;
+        }
+
+        const button = $(this);
+        const publicationId = button.data('publication-id');
+
+        $.ajax({
+            url: '/Publication/DeletePostAjax',
+            method: 'POST',
+            data: { publicationId: publicationId },
+            success: function (response) {
+                if (response.success) {
+                    $(`#publication-${publicationId}`).remove();
+                    alert(response.message);
+                } else {
+                    alert(response.message || 'Something went wrong.');
+                }
+            },
+            error: function () {
+                alert('An error occurred while processing your request.');
+            }
+        });
+    });
+</script>

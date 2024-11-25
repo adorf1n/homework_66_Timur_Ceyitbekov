@@ -22,6 +22,10 @@ public class PublicationController : Controller
     [Authorize]
     public async Task<IActionResult> Profile(int? userId)
     {
+
+        Console.WriteLine("Сработал Profile");
+        Console.WriteLine("Сработал Profile");
+
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         if (userId == null)
         {
@@ -54,6 +58,9 @@ public class PublicationController : Controller
     public async Task<IActionResult> Index()
     {
         var user = await _userManager.GetUserAsync(User);
+
+        Console.WriteLine("Сработал Index");
+        Console.WriteLine("Сработал Index");
 
         ViewBag.CurrentUserId = user.Id;
 
@@ -132,11 +139,17 @@ public class PublicationController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
 
+        if (user == null)
+            return Json(new { success = false, message = "User not logged in." });
+
         var publication = await _context.Publications.Include(p => p.Likes).FirstOrDefaultAsync(p => p.Id == publicationId);
 
-        if (publication == null) return NotFound();
+        if (publication == null)
+            return Json(new { success = false, message = "Publication not found." });
 
         var existingLike = publication.Likes.FirstOrDefault(l => l.UserId == user.Id);
+        bool isLiked = false;
+
         if (existingLike != null)
         {
             publication.Likes.Remove(existingLike);
@@ -144,13 +157,22 @@ public class PublicationController : Controller
         }
         else
         {
-            publication.Likes.Add(new Like { UserId = user.Id, PostId = publicationId , CreatedAt = DateTime.UtcNow});
+            publication.Likes.Add(new Like { UserId = user.Id, PostId = publicationId, CreatedAt = DateTime.UtcNow });
             publication.LikeCount++;
+            isLiked = true;
         }
 
         await _context.SaveChangesAsync();
-        return RedirectToAction("Index");
+
+        return Json(new
+        {
+            success = true,
+            likeCount = publication.LikeCount,
+            isLiked
+        });
     }
+
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> Follow(int followingId)
@@ -281,27 +303,40 @@ public class PublicationController : Controller
     [Authorize]
     public async Task<IActionResult> EditPost(Publication postEdit)
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
-            var user = await _userManager.GetUserAsync(User);
-
-            var publication = await _context.Publications.FirstOrDefaultAsync(p => p.Id == postEdit.Id);
-        
-            if (publication == null)
-            {
-                return NotFound("Publication not found.");
-            }
-            if (publication.UserId != user.Id)
-            {
-                return RedirectToAction("AccessDenied", "Account");
-            }
-            publication.Description = postEdit.Description;
-            publication.Image = postEdit.Image;
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Details", new { publicationId = postEdit.Id });
+            return Json(new { success = false, message = "Invalid data." });
         }
 
-        return View(postEdit);
+        var user = await _userManager.GetUserAsync(User);
+
+        var publication = await _context.Publications.FirstOrDefaultAsync(p => p.Id == postEdit.Id);
+
+        if (publication == null)
+        {
+            return Json(new { success = false, message = "Publication not found." });
+        }
+        if (publication.UserId != user.Id)
+        {
+            return Json(new { success = false, message = "Access denied." });
+        }
+
+        publication.Description = postEdit.Description;
+        publication.Image = postEdit.Image;
+
+        await _context.SaveChangesAsync();
+
+        return Json(new
+        {
+            success = true,
+            message = "Publication updated successfully.",
+            updatedPublication = new
+            {
+                publication.Id,
+                publication.Description,
+                publication.Image
+            }
+        });
     }
 
     [HttpPost]
@@ -363,17 +398,21 @@ public class PublicationController : Controller
     public async Task<IActionResult> DeletePostConfirmed(int publicationId)
     {
         var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return Json(new { success = false, message = "User not logged in." });
+
         var publication = await _context.Publications.FirstOrDefaultAsync(p => p.Id == publicationId);
         if (publication == null)
-        {
-            return NotFound("Publication not found.");
-        }
+            return Json(new { success = false, message = "Publication not found." });
+
         if (publication.UserId != user.Id)
-        {
-            return RedirectToAction("AccessDenied", "Account");
-        }
+            return Json(new { success = false, message = "Access denied." });
+
         _context.Publications.Remove(publication);
         await _context.SaveChangesAsync();
-        return RedirectToAction("Index");
+
+        return Json(new { success = true, message = "Publication deleted successfully.", publicationId });
     }
+
+    
 }

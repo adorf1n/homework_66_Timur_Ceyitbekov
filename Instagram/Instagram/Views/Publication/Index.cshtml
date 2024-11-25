@@ -3,6 +3,8 @@
 @{
     ViewBag.Title = "Main page - Post list";
 }
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <div class="container">
     @if (Model == null || !Model.Any())
     {
@@ -26,7 +28,7 @@
                     <div class="d-flex align-items-center mb-2">
                         <form asp-action="ToggleLike" method="post" class="me-2">
                             <input type="hidden" name="publicationId" value="@a.Id"/>
-                            <button type="submit" class="btn btn-success">
+                            <button class="btn btn-success btn-like">
                                 &#9829; Like <strong>@a.LikeCount</strong>
                             </button>
                         </form>
@@ -108,3 +110,28 @@
         }
     }
 </div>
+<script>
+$(document).on('click', '.btn-like', function () {
+    const button = $(this);
+    const publicationId = button.data('publication-id');
+
+    $.ajax({
+        url: '/Publication/ToggleLike',
+        method: 'POST',
+        data: { publicationId: publicationId },
+        success: function (response) {
+            if (response.success) {
+                const likeCountSpan = button.find('.like-count');
+                likeCountSpan.text(response.likeCount);
+
+                
+            } else {
+                alert(response.message || 'Something went wrong.');
+            }
+        },
+        error: function () {
+            alert('An error occurred while processing your request.');
+        }
+    });
+});
+</script>

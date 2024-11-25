@@ -15,3 +15,48 @@
         <button type="submit" class="btn btn-outline-danger mb-3 w-25">Delete</button>
     </form>
 </div>
+
+<script>
+    $(document).on('click', '.btn-edit', function () {
+        const publicationId = $(this).data('publication-id');
+
+        // ѕолучение текущих данных публикации
+        $.get(`/Publication/Details?publicationId=${publicationId}`, function (data) {
+            $('#editPostId').val(data.id);
+            $('#editDescription').val(data.description);
+            $('#editImage').val(data.image);
+            $('#editModal').modal('show');
+        }).fail(function () {
+            alert('Failed to load publication details.');
+        });
+    });
+
+    $('#saveEdit').on('click', function () {
+        const postData = {
+            Id: $('#editPostId').val(),
+            Description: $('#editDescription').val(),
+            Image: $('#editImage').val()
+        };
+
+        $.ajax({
+            url: '/Publication/EditPostAjax',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(postData),
+            success: function (response) {
+                if (response.success) {
+                    alert(response.message);
+                    $(`#publication-${response.updatedPublication.id} .description`).text(response.updatedPublication.description);
+                    $(`#publication-${response.updatedPublication.id} .image`).attr('src', response.updatedPublication.image);
+
+                    $('#editModal').modal('hide');
+                } else {
+                    alert(response.message || 'Failed to update the publication.');
+                }
+            },
+            error: function () {
+                alert('An error occurred while saving changes.');
+            }
+        });
+    });
+</script>

@@ -1,0 +1,29 @@
+﻿@model Publication
+
+@{
+    ViewBag.Title = "Create new post";
+}
+
+<div class="bg-dark text-center pt-5 pb-4 border-radius-1">
+    <h3 class="text-white mb-5">Fill out the form to create a new publication</h3>
+    <form asp-action="Create" asp-controller="Publication" asp-anti-forgery="true">
+        <div asp-validation-summary="ModelOnly" class="text-error"></div>
+        <div class="form_row mb-3">
+            <label for="" class="col-4">
+                <input type="text" class="form-control" asp-for="Image" placeholder="Enter the image link...">
+                <span asp-validation-for="Image" class="text-error" />
+            </label>
+        </div>
+        <div class="form_row mb-3">
+            <label for="" class="col-4">
+                <textarea asp-for="Description" type="text" class="form-control" placeholder="Provide a description..." rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-error" />
+            </label>
+        </div>
+        <button type="submit" class="btn btn-outline-light mb-3 w-25">Add new publication</button>
+    </form>
+</div>
+
+@section Scripts{
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
